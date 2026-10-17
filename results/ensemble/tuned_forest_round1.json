@@ -1,0 +1,61 @@
+{
+  "n_configs": 84,
+  "n_trees": 200,
+  "encoding": "onehot",
+  "plain": {
+    "config": "pln13",
+    "params": {
+      "criterion": "entropy",
+      "max_features": 32,
+      "max_depth": 20,
+      "min_samples_leaf": 2,
+      "sampling": "bootstrap",
+      "sampling_power": 0.0,
+      "class_sample_size": null,
+      "class_weight_power": 0.0
+    },
+    "macro_f1_mean": 0.6050945585995521,
+    "macro_f1_std": 0.003926413816977279
+  },
+  "balanced": {
+    "config": "cfg09",
+    "params": {
+      "criterion": "entropy",
+      "max_features": 24,
+      "max_depth": 30,
+      "min_samples_leaf": 2,
+      "sampling": "bootstrap",
+      "sampling_power": 0.0,
+      "class_sample_size": null,
+      "class_weight_power": 0.5
+    },
+    "macro_f1_mean": 0.6294472224813454,
+    "macro_f1_std": 0.0027985332211606863
+  },
+  "overall": {
+    "config": "cfg09",
+    "params": {
+      "criterion": "entropy",
+      "max_features": 24,
+      "max_depth": 30,
+      "min_samples_leaf": 2,
+      "sampling": "bootstrap",
+      "sampling_power": 0.0,
+      "class_sample_size": null,
+      "class_weight_power": 0.5
+    },
+    "macro_f1_mean": 0.6294472224813454,
+    "macro_f1_std": 0.0027985332211606863,
+    "which": "balanced"
+  },
+  "params": {
+    "criterion": "entropy",
+    "max_features": 24,
+    "max_depth": 30,
+    "min_samples_leaf": 2,
+    "sampling": "bootstrap",
+    "sampling_power": 0.0,
+    "class_sample_size": null,
+    "class_weight_power": 0.5
+  }
+}

@@ -1,0 +1,5 @@
+measure,kendall_tau_all,p_value,n_models,kendall_tau_base,p_value_base,n_base,order_compatible,order_grouped
+accuracy,0.9,4.725564828078056e-09,16,0.9999999999999998,4.96031746031746e-05,8,rf > rf_sampled > rf_weighted > boost > tree > knn_cw > knn > tree_balanced,rf > rf_sampled > rf_weighted > boost > tree > knn_cw > knn > tree_balanced
+macro_f1,0.9333333333333332,3.558798821695647e-10,16,0.8571428571428571,0.001736111111111111,8,rf_weighted > rf_sampled > rf > boost > tree > tree_balanced > knn_cw > knn,rf_weighted > rf_sampled > boost > rf > tree_balanced > tree > knn_cw > knn
+weighted_f1,0.8499999999999999,1.0202702466674028e-07,16,0.9285714285714285,0.0003968253968253968,8,rf_weighted > rf_sampled > rf > boost > tree > knn_cw > knn > tree_balanced,rf_sampled > rf_weighted > rf > boost > tree > knn_cw > knn > tree_balanced
+balanced_accuracy,0.9500000000000001,7.637604777155041e-11,16,0.9999999999999998,4.96031746031746e-05,8,tree_balanced > rf_weighted > rf_sampled > boost > rf > tree > knn_cw > knn,tree_balanced > rf_weighted > rf_sampled > boost > rf > tree > knn_cw > knn

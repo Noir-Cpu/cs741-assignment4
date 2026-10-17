@@ -1,0 +1,102 @@
+{
+  "assignment2_reference": {
+    "knn": {
+      "accuracy": 0.8019,
+      "macro_f1": 0.525,
+      "weighted_f1": 0.7995,
+      "balanced_accuracy": 0.5072
+    },
+    "tree": {
+      "accuracy": 0.7592,
+      "macro_f1": 0.5757,
+      "weighted_f1": 0.7903,
+      "balanced_accuracy": 0.6086
+    }
+  },
+  "comparisons": {
+    "tree_vs_knn": {
+      "tree_macro_f1_higher": true,
+      "tree_balanced_accuracy_higher": true,
+      "knn_accuracy_higher": false,
+      "wilcoxon_p": {
+        "accuracy": 6.103515625e-05,
+        "macro_f1": 6.103515625e-05,
+        "weighted_f1": 6.103515625e-05,
+        "balanced_accuracy": 6.103515625e-05
+      },
+      "mean_difference_tree_minus_knn": {
+        "accuracy": 0.012153627881574525,
+        "macro_f1": 0.05734256069136058,
+        "weighted_f1": 0.008913641848426801,
+        "balanced_accuracy": 0.05959190110921182
+      },
+      "on_G_tree_macro_f1_higher": true,
+      "on_G_tree_balanced_accuracy_higher": true,
+      "on_G_knn_accuracy_higher": false,
+      "full_conclusion_reproduces": false
+    },
+    "tree_vs_knn_cw": {
+      "tree_macro_f1_higher": true,
+      "tree_balanced_accuracy_higher": true,
+      "knn_accuracy_higher": false,
+      "wilcoxon_p": {
+        "accuracy": 6.103515625e-05,
+        "macro_f1": 6.103515625e-05,
+        "weighted_f1": 6.103515625e-05,
+        "balanced_accuracy": 6.103515625e-05
+      },
+      "mean_difference_tree_minus_knn": {
+        "accuracy": 0.01140006212924573,
+        "macro_f1": 0.05244763773974025,
+        "weighted_f1": 0.005031484345834625,
+        "balanced_accuracy": 0.032960123403973446
+      },
+      "on_G_tree_macro_f1_higher": true,
+      "on_G_tree_balanced_accuracy_higher": true,
+      "on_G_knn_accuracy_higher": false,
+      "full_conclusion_reproduces": false
+    },
+    "tree_balanced_vs_knn": {
+      "tree_macro_f1_higher": true,
+      "tree_balanced_accuracy_higher": true,
+      "knn_accuracy_higher": true,
+      "wilcoxon_p": {
+        "accuracy": 6.103515625e-05,
+        "macro_f1": 6.103515625e-05,
+        "weighted_f1": 6.103515625e-05,
+        "balanced_accuracy": 6.103515625e-05
+      },
+      "mean_difference_tree_minus_knn": {
+        "accuracy": -0.055119695107473256,
+        "macro_f1": 0.046546731489805836,
+        "weighted_f1": -0.02048364814571105,
+        "balanced_accuracy": 0.15945857091705445
+      },
+      "on_G_tree_macro_f1_higher": true,
+      "on_G_tree_balanced_accuracy_higher": true,
+      "on_G_knn_accuracy_higher": true,
+      "full_conclusion_reproduces": true
+    },
+    "tree_balanced_vs_knn_cw": {
+      "tree_macro_f1_higher": true,
+      "tree_balanced_accuracy_higher": true,
+      "knn_accuracy_higher": true,
+      "wilcoxon_p": {
+        "accuracy": 6.103515625e-05,
+        "macro_f1": 6.103515625e-05,
+        "weighted_f1": 6.103515625e-05,
+        "balanced_accuracy": 6.103515625e-05
+      },
+      "mean_difference_tree_minus_knn": {
+        "accuracy": -0.05587326085980205,
+        "macro_f1": 0.0416518085381855,
+        "weighted_f1": -0.024365805648303224,
+        "balanced_accuracy": 0.1328267932118161
+      },
+      "on_G_tree_macro_f1_higher": true,
+      "on_G_tree_balanced_accuracy_higher": true,
+      "on_G_knn_accuracy_higher": true,
+      "full_conclusion_reproduces": true
+    }
+  }
+}

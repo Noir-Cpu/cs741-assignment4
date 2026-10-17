@@ -1,0 +1,74 @@
+{
+  "tree": {
+    "standard_protocol_best": {
+      "criterion": "entropy",
+      "max_depth": 25,
+      "min_samples_leaf": 1,
+      "class_weight": null
+    },
+    "grouped_best": {
+      "criterion": "entropy",
+      "max_depth": 20,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced"
+    },
+    "configuration_changed": true,
+    "grouped_cv_macro_f1_of_grouped_best": 0.5916565913617386,
+    "grouped_cv_macro_f1_of_standard_best": 0.5838142811462379,
+    "standard_cv_macro_f1_of_standard_best": 0.5802672686898283
+  },
+  "knn": {
+    "standard_protocol_best": {
+      "metric": "manhattan",
+      "k": 5,
+      "weights": "distance",
+      "class_weight_power": 0.0
+    },
+    "grouped_best": {
+      "metric": "manhattan",
+      "k": 9,
+      "weights": "distance",
+      "class_weight_power": 0.0
+    },
+    "configuration_changed": true,
+    "grouped_cv_macro_f1_of_grouped_best": 0.5152655323070184,
+    "grouped_cv_macro_f1_of_standard_best": 0.4981771517632518,
+    "standard_cv_macro_f1_of_standard_best": 0.5199238998017212
+  },
+  "knn_cw": {
+    "standard_protocol_best": {
+      "metric": "manhattan",
+      "k": 15,
+      "weights": "distance",
+      "class_weight_power": 0.25
+    },
+    "grouped_best": {
+      "metric": "manhattan",
+      "k": 25,
+      "weights": "distance",
+      "class_weight_power": 0.25
+    },
+    "configuration_changed": true,
+    "grouped_cv_macro_f1_of_grouped_best": 0.5342457825577016,
+    "grouped_cv_macro_f1_of_standard_best": 0.5260712126288258,
+    "standard_cv_macro_f1_of_standard_best": 0.5304030031096325
+  },
+  "tree_balanced": {
+    "standard_protocol_best": {
+      "criterion": "entropy",
+      "max_depth": 15,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced"
+    },
+    "grouped_best": {
+      "criterion": "entropy",
+      "max_depth": 20,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced"
+    },
+    "configuration_changed": true,
+    "grouped_cv_macro_f1_of_grouped_best": 0.5916565913617386,
+    "grouped_cv_macro_f1_of_standard_best": 0.5828785101125614,
+    "standard_cv_macro_f1_of_standard_best": 0.5753890881714835
+  }
+}

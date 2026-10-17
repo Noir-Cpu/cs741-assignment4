@@ -1,0 +1,592 @@
+\documentclass[10pt,conference]{IEEEtran}
+\input{preamble}
+\input{numbers}
+
+% Notation of this report (one meaning per symbol):
+% B members, c member index, mu_c member class, P_{c,j} leaf distribution, varphi features tried per split,
+% omega class-balance exponent, chi_{c,i} sample multiplicity, p_{c,i} boosting instance weight,
+% sigma_c weighted error, nu_c model weight, varrho learning rate, R training sets, S/A/Q strength, disagreement, Q statistic.
+
+\begin{document}
+
+\title{Random Forests and Adaptive Boosting for the Classification of Network Attack Categories}
+
+\author{\IEEEauthorblockN{Student number: 22677267}}
+
+\maketitle
+
+\begin{abstract}
+Single classification trees are unstable. The attack categories of network flows are also imbalanced, and the flows include repeated feature vectors with conflicting labels. The study measured how much ensembles of classification trees improve the classification of attack categories in the UNSW-NB15 data set, and through what mechanism. A random forest and an adaptive boosting ensemble were built from scratch, with class weights or a class-balanced bootstrap to counter the imbalance. Nine research questions were answered under two protocols. The compatible protocol follows the second assignment, and under the grouped protocol no test vector has an identical training vector. The macro-averaged F1 score rose from \OPCompTreeMacroF{} for a single tree to \OPCompRfWMacroF{} for a class-weighted forest. About four fifths of the gain of the plain forest came from a reduction of the net variance, under the bias-variance definitions of the study. The grouped protocol kept the ranking of the models, and on the 15 grouped partitions the gains over the tree did not shrink, apart from a small decrease for the plain forest. Only the single grouped generalisation set showed smaller gains, for example a gain of $\OGDGrpRfWVsTreeMacroF$ for the weighted forest against $\OGDCompRfWVsTreeMacroF$ on the compatible generalisation set, and the two sets hold different rows. Boosting scored lower than the weighted forest and placed nearly all of the instance weight on the conflicting vectors, a pattern that agrees with sensitivity to label noise but does not prove the cause. A dissimilar ensemble with nearest-neighbour members did not improve on the best forest.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+\label{sec:intro}
+
+A network intrusion detection system assigns every recorded network flow to the normal class or to an attack category. The report studies ensembles of classification trees for the attack category task on the UNSW-NB15 data set of Moustafa and Slay~\cite{moustafa2015a}. The Introduction sets out the context and the open questions, the goals and the approach, and the main findings with the outline of the report.
+
+\subsection{Context and Open Questions}
+\label{sec:intro-context}
+
+The second assignment compared k-nearest neighbours with a classification tree on the same task. Both models classified the rare attack categories poorly, with F1 scores of only \BlTreeBalancedFBackdoor{} on Backdoor and \BlTreeBalancedFAnalysis{} on Analysis for the class-weighted tree of the second assignment, rebuilt for the study. A single tree is also unstable, because a small change in the training instances changes the splits. In all, \pDup{} per cent of the flows repeat the feature vector of another flow, and \pConflictRows{} per cent of the flows belong to feature vectors with conflicting labels.
+
+Breiman showed that the error of a forest depends on the strength of the trees and on the correlation between the trees, and reported that random forests are more robust to noise than adaptive boosting~\cite{breiman2001}. Three matters remain open for the present data. First, no deterministic classifier fits the minority labels of a conflicting vector, and boosting might spend the later rounds on those labels. Second, averaging leaves the bias of a tree unchanged, so variance reduction alone does not guarantee a better recall of the rare classes. Third, an identical training vector lets even a single tree answer correctly, so the gain of an ensemble may shrink when no test vector has such a twin.
+
+\subsection{Goals and Approach}
+\label{sec:intro-goals}
+
+The main goal is to measure how much an ensemble improves on a single tree, and through what mechanism. Further goals are to learn how the control parameters trade the strength of the members against their diversity and to test the out-of-bag error as a validation signal. The study also compares the ensembles with the two models of the second assignment and tests dissimilar members.
+
+A random forest and an adaptive boosting ensemble were built from scratch on the classification tree of a library written for the study.\footnote{Source code: https://github.com/Noir-Cpu/cs741-assignment4} Nine research questions guided the experiments. The questions were fixed before the experiments were run. Two of the nine were added after the initial comparison, before the experiments that answer the two questions. The comparison used a compatible protocol that follows the second assignment and a grouped protocol that keeps identical vectors together. The main contribution is a decomposition of the gain of tree ensembles into variance reduction and bias reduction under both protocols.
+
+\subsection{Principal Findings and Outline}
+\label{sec:intro-summary}
+
+The forests raised the macro-averaged F1 score of the tree from \OPCompTreeMacroF{} to \OPCompRfMacroF{} without a class treatment and to \OPCompRfWMacroF{} with class weights. The gain came mainly from a reduction of the net variance. Boosting scored lower than the weighted forest and placed nearly all of the instance weight on rows with conflicting labels. The grouped protocol kept the ranking of the models, and on the grouped partitions only the gain of the plain forest over the tree shrank slightly. Only on the single grouped generalisation set were the gains of all four ensembles smaller, by an amount that differed between the ensembles. A dissimilar ensemble with nearest-neighbour members did not improve on the best forest.
+
+Section~\ref{sec:background} gives the background on ensemble learning and on the two models of the second assignment. Section~\ref{sec:methodology} justifies the choice of ensembles and describes the data and the implementation. Section~\ref{sec:procedure} sets out the research questions and the experiments. Section~\ref{sec:results} reports and discusses the results, and Section~\ref{sec:conclusion} concludes. In short, the conflicting vectors and the rare classes leave the size and the source of the gain of tree ensembles open, and the study measures both.
+
+%%%%
+\section{Background}
+\label{sec:background}
+
+An ensemble helps only when the members differ, and the kind of difference decides whether the ensemble lowers variance or bias. The Background sets out the principles of ensemble learning, bagging and random forests, and adaptive boosting. The two comparison models of the second assignment and the treatment of class imbalance follow.
+
+\subsection{Principles of Ensemble Learning}
+\label{sec:bg-principles}
+
+An ensemble combines the predictions of several models, the members, into one prediction. The error of a model on unseen instances has three components: noise in the labels, bias and variance. Breiman defined bias and variance for a classifier as components of the test set error. Breiman also showed that unstable classifiers such as trees have low bias and high variance, and that combining several versions of such a classifier reduces the variance~\cite{breiman1998}. Under zero-one loss, the decomposition is an operational definition and not an additive identity: bias is defined against the main prediction, the class predicted most often over many training sets, and the net variance turns negative when variation between training sets corrects a wrong main prediction.
+
+Members must differ for the combination to help. Breiman showed that the error of a forest depends on the strength of the trees and the correlation between the trees~\cite{breiman2001}, so a mechanism that decorrelates the members also weakens each member. Kuncheva and Whitaker, in contrast, questioned whether measured diversity helps to build an ensemble~\cite{kuncheva2003}. The experiments therefore measured diversity and related the measure to the score, instead of assuming either view. Let $a_{i,j}$ denote the number of the $B$ members that predict class $j$ for instance $i$ of an evaluated set $\mathcal{T}$. The disagreement $\Theta$ of equation~\eqref{eq:disagree} is the probability that two members drawn without replacement predict different classes, averaged over the instances.
+\begin{equation}
+\label{eq:disagree}
+\Theta = \frac{1}{|\mathcal{T}|} \sum_{i \in \mathcal{T}} \Bigl( 1 - \sum_{j=1}^{m} \frac{a_{i,j} (a_{i,j} - 1)}{B (B - 1)} \Bigr)
+\end{equation}
+
+Members of different families need a combination rule. A hard vote counts the predicted classes, and a soft vote averages the class distributions of the members. Stacking, as Wolpert showed, trains a second-level model on member guesses for held-out data~\cite{wolpert1992}. The guesses must be out-of-fold predictions, made by members fitted without the instance. Guesses on the training instances of a member would reward the member that memorises most, and the meta-learner would trust that member. A vote with equal weights helps when the members have comparable accuracy and make weakly correlated errors. A much weaker member pulls the average towards the errors of that member, so the vote can fall below the best member.
+
+\subsection{Bagging and Random Forests}
+\label{sec:bg-forest}
+
+Breiman introduced bagging, where each member trains on a bootstrap sample of $n$ instances drawn with replacement from a training set of $n$ instances~\cite{breiman1996}. An instance appears in a sample with the probability $1 - (1 - 1/n)^{n} \approx 0.632$. About 37 per cent of the instances are therefore out of bag for each member, and the out-of-bag instances allow an estimate of the generalisation error without a validation set. A random forest also chooses $\varphi$ features at random for the split at each node, and Algorithm~\ref{alg:forest} summarises the construction. Breiman showed that the generalisation error of a forest converges as the number of trees grows~\cite{breiman2001}. Let $P_{c,j}(\vect{x})$ denote the proportion of class $j$ in the leaf that member $c$ reaches for the instance $\vect{x}$, and let $B$ denote the number of members. Equation~\eqref{eq:forest} gives the forest prediction over the $m$ classes.
+\begin{equation}
+\label{eq:forest}
+\hat{y}(\vect{x}) = \argmax_{j \in \{1, \ldots, m\}} \; \frac{1}{B} \sum_{c=1}^{B} P_{c,j}(\vect{x})
+\end{equation}
+Let $\chi_{c,i}$ denote the number of times that instance $i$ occurs in the sample of member $c$. The out-of-bag prediction $\tilde{y}(\vect{x}_i)$ applies equation~\eqref{eq:forest} to the members with $\chi_{c,i} = 0$ only. Probst \textit{et al.} reviewed the hyperparameters of the random forest, including the number of trees, the number of features per split, the minimum node size and the sampling scheme~\cite{probst2019}.
+
+\begin{algorithm}[t]
+\caption{Construction of a random forest}
+\label{alg:forest}
+\begin{algorithmic}[1]
+\Require a labelled training set, the number of members $B$, the number of features $\varphi$ tried per split, tree parameters
+\Ensure a forest of $B$ trees
+\ForAll{member $c$ from $1$ to $B$}
+    \State Draw a bootstrap sample of the training set and record the multiplicities $\chi_{c,i}$
+    \State Grow a classification tree on the sample with the instance weights $\chi_{c,i}$
+    \State At every node, select the best split among $\varphi$ features drawn at random
+    \State Stop growing at the depth limit or at the minimum leaf size
+\EndFor
+\State Aggregate the leaf distributions of all trees via equation~\eqref{eq:forest}
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Adaptive Boosting}
+\label{sec:bg-boosting}
+
+Freund and Schapire derived a boosting algorithm from an on-line learning model with a multiplicative weight-update rule~\cite{freund1997}. Hastie \textit{et al.} extended the algorithm directly to the multi-class case. The extension is called SAMME, an abbreviation for stagewise additive modelling using a multi-class exponential loss, and is equivalent to forward stagewise additive modelling under that loss~\cite{hastie2009}. Let $p_{c,i}$ denote the weight of instance $i$ at round $c$, with $p_{1,i} = 1/n$. Let $\mu_c(\vect{x})$ denote the class that member $c$ predicts for $\vect{x}$, and $\iota$ the indicator function. Equation~\eqref{eq:werror} gives the weighted error $\sigma_c$ of member $c$.
+\begin{equation}
+\label{eq:werror}
+\sigma_c = \sum_{i=1}^{n} p_{c,i} \, \iota\bigl(\mu_c(\vect{x}_i) \neq y_i\bigr)
+\end{equation}
+Equation~\eqref{eq:alpha} gives the model weight $\nu_c$, where $\varrho \in (0, 1]$ denotes the learning rate. The term $\ln(m - 1)$ keeps the weight positive for every member with an error below $1 - 1/m$, the error of random guessing.
+\begin{equation}
+\label{eq:alpha}
+\nu_c = \varrho \Bigl( \ln \frac{1 - \sigma_c}{\sigma_c} + \ln (m - 1) \Bigr)
+\end{equation}
+Equation~\eqref{eq:update} updates the instance weights, and a normalisation makes the weights sum to one. Equation~\eqref{eq:boostpred} gives the prediction, and Algorithm~\ref{alg:samme} summarises the procedure.
+\begin{equation}
+\label{eq:update}
+p_{c+1,i} \propto p_{c,i} \exp\bigl( \nu_c \, \iota(\mu_c(\vect{x}_i) \neq y_i) \bigr)
+\end{equation}
+\begin{equation}
+\label{eq:boostpred}
+\hat{y}(\vect{x}) = \argmax_{j \in \{1, \ldots, m\}} \sum_{c=1}^{B} \nu_c \, \iota\bigl(\mu_c(\vect{x}) = j\bigr)
+\end{equation}
+
+Boosting fits the training instances ever more closely, so label noise is a risk. Vectors with conflicting labels act as label noise for every deterministic classifier, so the robustness of forests to noise favours forests on the present data, whereas the bias of the rare classes favours boosting. Friedman developed gradient boosting, a method that fits regression trees as the additive components to the gradient of a loss~\cite{friedman2001}.
+
+\begin{algorithm}[b]
+\caption{Multi-class adaptive boosting}
+\label{alg:samme}
+\begin{algorithmic}[1]
+\Require a labelled training set, the number of rounds $B$, the learning rate $\varrho$, the weak-learner parameters
+\Ensure members $\mu_c$ with model weights $\nu_c$
+\State Set every instance weight $p_{1,i}$ to $1/n$
+\ForAll{round $c$ from $1$ to $B$}
+    \State Grow a weak classification tree on the training set with the weights $p_{c,i}$
+    \State Compute the weighted error $\sigma_c$ via equation~\eqref{eq:werror}
+    \State Stop if $\sigma_c$ reaches $1 - 1/m$
+    \State Compute the model weight $\nu_c$ via equation~\eqref{eq:alpha}
+    \State Update and normalise the instance weights via equation~\eqref{eq:update}
+\EndFor
+\State Predict the class with the largest summed model weight via equation~\eqref{eq:boostpred}
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Models of the Second Assignment}
+\label{sec:bg-baselines}
+
+The k-nearest neighbours classifier assigns a query the class that dominates among the $k$ closest training instances under the Manhattan or the Euclidean distance, so the features need comparable scales. Cover and Hart showed that the error rate of the nearest-neighbour rule approaches at most twice the Bayes error rate as the training set grows~\cite{cover1967}. Let $\Omega_k(\vect{x})$ denote the indices of the $k$ nearest training instances of $\vect{x}$, and $y_i$ the label of instance $i$. Equation~\eqref{eq:vote} gives the prediction. The vote weight $w_i$ is one under uniform voting and the inverse distance under distance-weighted voting. The class weight is $b_j = (n / (m \, n_j))^{\alpha}$, where $n_j$ is the number of training instances of class $j$ and $\alpha \in [0, 1]$ the class-weight power.
+\begin{equation}
+\label{eq:vote}
+\hat{y}(\vect{x}) = \argmax_{j \in \{1, \ldots, m\}} \; b_j \sum_{i \in \Omega_k(\vect{x})} w_i \, \iota(y_i = j)
+\end{equation}
+Algorithm~\ref{alg:knn} gives the prediction with the exact search of the study, a search that never stores the full matrix of distances.
+
+A classification tree partitions the feature space with univariate threshold tests. Breiman \textit{et al.} developed the classification and regression tree framework~\cite{breiman1984a}, and Quinlan described the induction of decision trees~\cite{quinlan1986}. Let $\pi_{t,j}$ denote the weighted proportion of class $j$ at node $t$, so that the Gini index is $g(t) = 1 - \sum_{j} \pi_{t,j}^{2}$ and the entropy is $H(t) = -\sum_{j} \pi_{t,j} \log_2 \pi_{t,j}$. A split $s$ sends the shares $\eta_L$ and $\eta_R$ of the node weight to the children $t_L$ and $t_R$. The tree grows by choosing the split with the largest impurity decrease of equation~\eqref{eq:decrease}, for the impurity $\phi$ equal to $g$ or $H$, until a node is pure or reaches the depth limit or the minimum leaf size.
+\begin{equation}
+\label{eq:decrease}
+\Delta(s, t) = \phi(t) - \eta_L \, \phi(t_L) - \eta_R \, \phi(t_R)
+\end{equation}
+Instance weights and class weights enter the proportions $\pi_{t,j}$. Each test depends on the order of the values of one feature only, so a monotone transformation of a feature leaves the tree unchanged. Algorithm~\ref{alg:tree} summarises the induction on binned features, the base learner of every ensemble of the study.
+
+\begin{algorithm}[b]
+\caption{Prediction of k-nearest neighbours}
+\label{alg:knn}
+\begin{algorithmic}[1]
+\Require training instances $\vect{x}_i$ with labels $y_i$, a query $\vect{x}$, $k$, the distance, the vote and class weights
+\Ensure the predicted class $\hat{y}(\vect{x})$
+\State Fill a sorted list of $k$ distances with infinite entries
+\ForAll{training instance $i$, in tiles of 1,024 instances}
+    \State Accumulate the distance to $\vect{x}$ over blocks of 16 features and skip $i$ once the sum reaches the $k$-th listed distance
+    \State Otherwise insert $i$ into the list and drop the last entry
+\EndFor
+\State Return the class with the largest vote of the listed instances $\Omega_k(\vect{x})$ via equation~\eqref{eq:vote}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[b]
+\caption{Induction of a weighted classification tree}
+\label{alg:tree}
+\begin{algorithmic}[1]
+\Require binned weighted instances, the impurity $\phi$, the depth limit, the minimum leaf size, $\varphi$
+\Ensure a tree with weighted class totals in every leaf
+\State Open the root node with every instance of positive weight
+\ForAll{open node $t$}
+    \State Store the weighted class totals of $t$
+    \If{$t$ is pure, at the depth limit or below twice the leaf size}
+        \State Close $t$ as a leaf
+    \Else
+        \ForAll{feature in random order until $\varphi$ non-constant features are tried}
+            \State Compute $\Delta(s, t)$ via equation~\eqref{eq:decrease} at every bin boundary that leaves enough instances on both sides
+        \EndFor
+        \State Split $t$ at the best boundary into $t_L$ and $t_R$, or close $t$ as a leaf if no boundary qualifies
+    \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Class Imbalance in Ensembles}
+\label{sec:bg-imbalance}
+
+The data have a class ratio of \ratioImbalance{} to one between the largest and the smallest class. Ting showed that the initial instance weights decide whether tree induction yields minimum-error trees or trees of minimum high-cost error~\cite{ting2002}. A tree ensemble can therefore multiply the weight of each instance by the class weight $b_j$. Alternatively, the ensemble can change the sampling of each member, as a balanced bootstrap does. Liu \textit{et al.} proposed exploratory undersampling, where a learner trains on each of several subsets of the majority class and the outputs are combined~\cite{liu2009}.
+
+\subsection{Summary}
+\label{sec:bg-summary}
+
+Bagging and random forests reduce variance, adaptive boosting reduces bias, and class weights or balanced sampling counter the class imbalance. The comparison models are k-nearest neighbours and the classification tree, and stacking and voting combine members of different families. The next section justifies the choice of ensembles.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methodology}
+\label{sec:methodology}
+
+The design must separate the effect of ensembling from the effects of the base learner and the preprocessing, and must stay valid on repeated vectors. The Methodology justifies the choice of ensembles, describes the data and their transformation, and sets out the design of the ensembles. The implementation closes the section.
+
+\subsection{Choice of Ensemble Methods}
+\label{sec:meth-choice}
+
+The final evaluation is meant to show how much error a collection of trees removes compared with one tree, and through what mechanism. An ensemble of similar members keeps the base learner, the impurity measure and the preprocessing fixed. The comparison with the single tree therefore isolates the effect of ensembling better than a comparison with a model of another family. A heterogeneous ensemble would instead test whether another inductive bias corrects the errors that similar trees share, such as the memorisation of repeated vectors. A nearest-neighbour model shares that tendency, so the choice was also tested: votes and a stacked ensemble of the forests, the tree and the weighted nearest-neighbour model were compared with the best forest.
+
+Two homogeneous methods cover the two mechanisms of Section~\ref{sec:bg-principles}. A random forest of deep trees, with low bias and high variance, suits averaging, and adaptive boosting with trees of limited depth reduces bias. The library of the study provides only classification trees, so the study used the weighted variant of SAMME instead of gradient boosting. Both methods have class-sensitive variants, because the class ratio makes the unweighted variants favour the frequent classes. The plain forest uses neither class weights nor class-balanced sampling. The weighted forest uses class weights with the standard bootstrap, and the sampled forest uses a class-balanced bootstrap or undersampling.
+
+\subsection{Data Set and Transformation}
+\label{sec:meth-data}
+
+Moustafa and Slay created UNSW-NB15 from real background traffic and synthetic attack traffic~\cite{moustafa2015a}. The file holds \nFile{} flows with an identifier, \nNumeric{} numeric features, \nNominal{} nominal features and a target with ten classes: the normal class and nine attack categories. The largest class holds \nClassMax{} flows and the smallest class, Worms, holds \nClassMin{} flows. Always predicting the largest class reaches an accuracy of \pMajorityAccuracy{} per cent but a macro-averaged F1 score of only \majorityMacroF{}. The \pConflictRows{} per cent of the flows with conflicting labels belong to \nConflictVec{} distinct vectors. Predicting the most frequent label of every distinct vector reaches \pCeiling{} per cent accuracy on the development set $D$ itself, an upper bound for deterministic classifiers on those rows only. On average, \OPCompTwinShare{} per cent of the test flows of a comparison partition have an identical twin in the training part, so cross-validated scores are optimistic for models that memorise.
+
+A split depends only on the order of the values of one feature, so the logarithm and the standardisation of the distance-based pipeline leave every tree unchanged. An ablation on the single tree confirmed the argument, with a macro-averaged F1 score of \AbTreeRawMacroF{} for the raw columns and \AbTreeLogStdMacroF{} after the transformations. The ensembles therefore used the raw numeric columns and kept outliers and correlated columns. The identifier numbers the rows and describes no property of a flow, so the identifier was dropped. The missing symbol \texttt{?} occurs only in the feature service, in \pServiceMissing{} per cent of the flows, and the share depends on the protocol and the connection state, so the symbol was kept as the category none. Protocols with fewer than \protoThreshold{} training instances, counted on the training part only, were merged into the category other. The threshold follows the pipeline of the second assignment. In the development set $D$, \nProtoRare{} of the \nProto{} protocols fall below the threshold but hold only \pProtoRareRows{} per cent of the flows, and without the merge the one-hot encoding of the nearest-neighbour pipeline would grow from \AbKnnFullColumns{} to \AbKnnNoRareColumns{} columns. Strobl \textit{et al.} showed that variable selection in random forests is biased when the predictors vary in the number of categories~\cite{strobl2007}, and a one-hot indicator offers a single threshold. The study therefore compared the one-hot encoding of the three nominal features with an integer encoding by the frequency rank of each category in the training part, and kept the better encoding.
+
+\subsection{Design of the Ensembles}
+\label{sec:meth-design}
+
+The experiments varied the number of trees, the number of features per split, the depth limit, the minimum leaf size and the sampling of the forest. The random forest extends Algorithm~\ref{alg:forest} in three ways. First, a sampler controls the class balance of each sample, as Algorithm~\ref{alg:sampler} summarises. Instance $i$ is drawn with a probability proportional to $n_{y_i}^{-\omega}$, where $\omega \in [0, 1]$ is the class-balance exponent. The value $\omega = 0$ gives the standard bootstrap and $\omega = 1$ gives equal expected counts for every class. Undersampling instead draws $q$ instances with replacement from every class. Second, the class-weight power $\alpha$ scales the weight of every instance in the impurity computation and the leaf distributions of the member trees. Third, the out-of-bag and the test predictions are stored at selected numbers of members while the trees are fitted, so one fit gives the scores and the diversity of every prefix of the forest. The boosting ensemble follows Algorithm~\ref{alg:samme}, with initial instance weights proportional to the class weights. The weak learners are trees with a depth limit and all features at every split, so the fit is deterministic.
+
+\begin{algorithm}[b]
+\caption{Class-balanced sample of one tree}
+\label{alg:sampler}
+\begin{algorithmic}[1]
+\Require labels $y_i$, class sizes $n_j$, the exponent $\omega$, an undersampling size $q$ or none
+\Ensure the multiplicities $\chi_{c,i}$ of the sample of member $c$
+\If{an undersampling size $q$ is given}
+    \ForAll{class $j$}
+        \State Draw $q$ instances of class $j$ with replacement and count the repetitions
+    \EndFor
+\Else
+    \State Set the draw probability of instance $i$ proportional to $n_{y_i}^{-\omega}$
+    \State Draw $n$ instances with replacement and count the repetitions
+\EndIf
+\State Mark every instance with multiplicity zero as out of bag for the member
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Implementation}
+\label{sec:meth-impl}
+
+A library written from scratch for the study supplies the classification tree, the nearest-neighbour model, the preprocessing, the partitions of both protocols, the seed streams and the statistical tests. The tree is implemented in NumPy~\cite{harris2020a} and Numba~\cite{lam2015a}, and SciPy~\cite{virtanen2020a} supplies the statistical tests. Table~\ref{tab:modules} lists the main modules and their tests. Scikit-learn appears only in the unit tests as a reference, and all unit tests pass. The tests guarantee three properties that the results rely on: the split search finds hand-computed splits, a forest is identical for any number of threads, and the neighbour search returns the neighbours of a full distance computation.
+
+All experiments ran on one machine with an \cpuModel{} processor with \logicalCores{} logical cores and \ramGB{} gigabytes of memory. The fit kernel of the tree releases the global interpreter lock, so a pool of ten threads fits the trees of a forest in parallel. The trees return in index order, so a forest is reproducible for any number of threads. The trees use at most 4,095 bins per feature, with edges fitted on the training rows. A feature with at most 4,095 distinct values receives an edge midway between every pair of adjacent values, so the split search stays exact, and a feature with more values receives edges at equal-frequency quantiles. A one-hot indicator has two values and therefore one edge. In the ablation, a single tree with 4,095 bins reached \AbTreeBinsMidMacroF{} against \AbTreeRawMacroF{} for the exact search.
+
+\begin{table}[b]
+\caption{Modules and tests}
+\label{tab:modules}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.2\columnwidth}>{\raggedright\arraybackslash}p{0.36\columnwidth}>{\raggedright\arraybackslash}p{0.38\columnwidth}@{}}
+\toprule
+Module & Responsibility & Test \\
+\midrule
+data, preprocess & loading, transformations fitted on training rows & hand-computed preset, statistics from training rows only \\
+protocol, grouped & seed streams, both kinds of partition & reproducible streams, disjoint partitions, groups kept whole \\
+metrics, stats & measures, paired tests, Holm adjustment & hand examples, agreement with scikit-learn and SciPy \\
+knn & exact search and weighted votes & hand-computed votes, agreement with brute force \\
+tree & binned classification tree & hand-computed splits, parallel fits equal to serial fits \\
+ensemble & forest, samplers, boosting, diversity & hand-computed bootstrap and boosting round, independence of the thread count \\
+scripts & experiments, macros, figures & no unit test, numbers regenerated from the result files \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The two models of the second assignment were rebuilt with the library. Distances need comparable scales, so the nearest-neighbour model standardises every numeric column and encodes the nominal features as one-hot indicators. The model also drops three columns that correlate at 0.995 or more with a retained column, because a near-copy counts the same quantity twice in the distance. The model also takes the logarithm of one plus the value of \nLogged{} heavy-tailed features, whose skewness of \skewMin{} to \skewMax{} fell to at most \skewAfter{}, so that a few extreme flows do not dominate the distance. In the ablation, the model without the logarithm scored \AbKnnNoLogMacroF{} against \AbKnnFullMacroF{}. The search is exact brute force: blocks of 16 queries run in parallel, and the training matrix is streamed in tiles, as Algorithm~\ref{alg:knn} shows. Grids of \OKnnGrid{} and \OTreeGrid{} configurations, selected on the macro-averaged F1 score, tuned the neighbourhood size, the distance, the vote weighting and the class-weight power of the nearest-neighbour model, and the criterion, the depth limit, the leaf size and the class weights of the tree. For the plain nearest-neighbour model, the search selected \BlKnnK{} neighbours with the \BlKnnMetric{} distance and distance-weighted votes. For the weighted model, the search selected \BlKnnCwK{} neighbours with the class-weight power \BlKnnCwPower{}. For the plain tree, the search chose the \BlTreeCriterion{} criterion and depth \BlTreeDepth{}, and for the balanced tree depth \BlTreeBalancedDepth{} with balanced class weights. The rebuilt models stay close to the second assignment: the balanced tree scored \BlTreeBalancedMacroFMean{} against \OATwoTreeMacroF{}, and the nearest-neighbour model \BlKnnMacroFMean{} against \OATwoKnnMacroF{}.
+
+\subsection{Summary}
+\label{sec:meth-summary}
+
+The study built a random forest and a boosting ensemble from trees, with class-sensitive sampling and weights. The comparison with a single tree then measures the effect of ensembling with the same base learner. The next section states the research questions and the experiments.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Empirical Procedure}
+\label{sec:procedure}
+
+Tuning gives insight only when the questions and expectations come before the results. The Empirical Procedure sets out the research questions with their expectations and analyses, the evaluation protocols and the experiments. The measures, the statistical tests and the changes to the initial design follow. The questions were fixed before the experiments were run. Seven questions were fixed before any experiment. The grouped and the dissimilar questions were added after the initial comparison, and each of the two was fixed with an expectation before the experiments that answer the question.
+
+\subsection{Research Questions}
+\label{sec:procedure-questions}
+
+The size question asked how the number of members changes the error of the forest and of the boosting ensemble, and where the returns diminish. The forest was expected to level off near 100 trees without overfitting~\cite{breiman2001}, and boosting to reach the optimum earlier and to degrade under label noise. The feature question asked how the number $\varphi$ of features tried per split trades the strength of a tree against the diversity of the forest. Few features were expected to give weak and diverse trees. The structure question asked how the depth limit and the minimum leaf size affect the forest. Deep trees were expected to suit averaging, because averaging removes variance and not bias.
+
+The treatment question asked whether class weights, a balanced bootstrap or undersampling help the rare classes, and at what cost, judged by the per-class recall, the balanced accuracy and the accuracy. A higher recall on the rare classes was expected, with lower precision and accuracy. The decomposition question asked how much of the gain over a single tree comes from reducing variance and how much from reducing bias, overall and for the rare classes. The forest was expected to reduce the variance and boosting the bias, with more variance on noisy labels. The share of the boosting weight on the rows of conflicting vectors was expected to rise with the number of rounds.
+
+The out-of-bag question asked whether the out-of-bag error ranks configurations reliably and estimates the test error. The rank correlation between the out-of-bag and the test scores measures the ranking, and the agreement of the out-of-bag and the cross-validated choice measures the use for selection. The comparison question asked how the tuned ensembles compare with the models of the second assignment, and how repeated vectors affect the comparison, through paired tests under the compatible protocol. A twin is a training instance with the feature vector of a test instance, and a test instance has no twin, twins of one label, or twins of several labels. The gain was expected to be larger on the instances without a twin, because a twin already lets a single tree answer correctly.
+
+The grouped question asked whether the ranking of the models and the conclusions hold when no test vector has a twin. The memorising nearest-neighbour models and fully grown trees were expected to lose most, and the ensembles to stay ranked above the single models. The answer rests on the same paired tests and on the Kendall rank correlation of the mean scores under the two protocols. The dissimilar question asked whether a vote or a stacked combination of the forests, the tree and the weighted nearest-neighbour model improves on the best forest, and what each member contributes through leave-one-member-out votes. No combination was expected to gain more than 0.005, because the nearest-neighbour model had scored 0.08 lower than the forest in the first results and shares the tendency to memorise.
+
+\subsection{Evaluation Protocols}
+\label{sec:procedure-protocol}
+
+A master seed, \masterSeed{}, generated every random stream through the seed sequence of NumPy~\cite{harris2020a} and a named purpose. Compared configurations share the streams, so their differences are not seed noise. The compatible protocol follows the second assignment. A stratified hold-out fixed the generalisation set $G$ of \nGen{} flows, never used for tuning or selection, and left the development set $D$ of \nDev{} flows. Tuning used stratified five-fold cross-validation inside $D$. The comparison repeated stratified five-fold cross-validation three times and gave 15 paired scores per model on overlapping partitions. Preprocessing was refitted on every training part.
+
+In the grouped protocol, two rows belong to the same group when all 42 descriptive features are identical. A grouped hold-out fixed $D_{g}$ and $G_{g}$, and grouped stratified five-fold cross-validation, repeated three times, gave 15 partitions where no group straddles the training and the test part. The tuned configurations stayed unchanged, so the grouped scores measure the effect of the leakage and not a second tuning. Stochastic models ran with independent streams: two runs in the sweeps, three in the second stage of the joint search, five per comparison partition, and \OGCompRuns{} and 10 runs on $G$ and $G_{g}$. Boosting and the baselines are deterministic and ran once.
+
+\subsection{Experiments and Control Parameters}
+\label{sec:procedure-experiments}
+
+Table~\ref{tab:experiments} lists the experiments. The base forest of the sweeps grows 200 trees with the entropy criterion of the tuned baseline tree. The base forest tries $\varphi = \OFeatSqrt$ of the \OFeatEncoded{} encoded features per split, the rounded-down square root, and uses no depth limit, a leaf size of one, the standard bootstrap and $\alpha = 0$. The ordinal rank would replace the one-hot encoding only if the rank raised the mean macro-averaged F1 score by more than 0.005, half the standard deviation of the baseline tree over the comparison partitions. The returns diminish at the smallest number of members whose mean score lies within the same margin of the final score. The treatment samplers were the standard bootstrap, balanced bootstraps with the exponents $\omega$ of 0.5 and one, and undersampling to the smallest class and to 1,000 instances per class.
+
+\begin{table*}[t]
+\caption{Experiments and control parameters}
+\label{tab:experiments}
+\centering
+\footnotesize
+\begin{tabular}{p{0.11\textwidth}p{0.42\textwidth}p{0.18\textwidth}p{0.18\textwidth}}
+\toprule
+Experiment & Varied parameters and values & Fixed settings & Units of work \\
+\midrule
+Encoding & one-hot against ordinal rank & base forest & five folds, two runs \\
+Size & tuned forests to 2,000 trees, boosting to 1,000 rounds, 21 and 19 checkpoints & selected configurations & five folds, two runs \\
+Feature & $\varphi \in \{1, 2, 4, \text{square root}, 16, 32, \text{all}\}$ & base forest & five folds, two runs \\
+Structure & depth limit $\{3, 5, 8, 12, 20, \text{none}\}$, leaf size $\{1, 2, 5, 10, 25, 50\}$ & base forest & five folds, two runs \\
+Treatment & $\alpha \in \{0, 0.5, 1\}$, five samplers & base forest & five folds, two runs \\
+Joint search & criterion, $\varphi$, depth limit, leaf size, $\alpha$, sampler; four families of class treatment & 100 and 200 trees & stage one: two folds; stage two: five folds, three runs \\
+Boosting & depth of the weak learner $\{3, 6, 9, 12, 18, 24, 32\}$;\newline $\varrho \in \{0.03, 0.1, 0.3, 1\}$; $\alpha \in \{0, 0.5, 1\}$ & 200 and 300 rounds & five folds \\
+Decomposition & tuned models, bagging and baseline trees & 20 training sets of half the training part & 20 fits per model, five folds \\
+Boosting weight & share of the weight on conflicting rows after selected rounds & tuned boosting & five folds \\
+Compatible comparison & tuned models, baselines and dissimilar ensembles & 500 trees & 15 partitions, five runs, $G$ with 30 runs \\
+Grouped comparison & the same models & 500 trees & 15 grouped partitions, five runs, $G_{g}$ with 10 runs \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+The one-factor sweeps do not give the joint optimum, so a joint search covered the criterion, $\varphi \in \{4, 8, 12, 16, 24, 32, 48\}$, the depth limit $\{16, 20, 24, 32, \text{none}\}$, the minimum leaf size $\{1, 2, 3, 5\}$ and $\alpha \in \{0, 0.25, 0.5, 0.75, 1\}$. The sampler was the standard bootstrap, a balanced bootstrap with $\omega \in \{0.25, 0.5, 0.75, 1\}$, or undersampling to 1,000 or 3,000 instances per class. Random trials cover a joint space more efficiently than a grid~\cite{bergstra2012}, and successive halving spends the budget on the promising configurations. The first stage drew 40 random configurations for each of the four families of class treatment and evaluated each with 100 trees on two folds. The second stage evaluated the four best configurations of each family and seven forced configurations, the optima of the sweeps and of the first results, with 200 trees on five folds and three runs, and the best of each family became the tuned forest. The number of trees was left to the size experiment, because the forest converges as the number of trees grows.
+
+The first boosting grid spanned the depths three to 18 with 200 rounds. The learning rates span a roughly logarithmic range up to one, the rate without shrinkage, and the class-weight powers match the sweeps of the forest. The optimum lay at the edge, so a second grid added the depths 24 and 32, lower learning rates and 300 rounds. The vote averages the class distributions of the members with equal weights. The stacked ensemble trains a class-weighted meta-forest of 100 trees on the out-of-fold class distributions of the four members. Five grouped folds inside the training part produce the distributions, so no member predicts a row with the help of an identical vector.
+
+\subsection{Performance Measures}
+\label{sec:procedure-measures}
+
+The precision $u_j$, the recall $e_j$ and the F1 score $f_j$ of class $j$ follow from the confusion matrix, with zero for a zero denominator. The main measure is the macro-averaged F1 score $\bar{f}$, the mean of $f_j$ over the $m$ classes, because accuracy follows the frequent classes and hides failures on the rare classes~\cite{vanzyl2025}. Brodersen \textit{et al.} showed that the accuracy is optimistic for a biased classifier on imbalanced data and proposed the balanced accuracy, the mean recall over the classes~\cite{brodersen2010}. The study also reports the balanced accuracy.
+
+The strength $\mathcal{S}$ is the mean accuracy of the members. The disagreement $\Theta$ follows equation~\eqref{eq:disagree}. For two members, let $N^{11}$, $N^{00}$, $N^{10}$ and $N^{01}$ count the instances where both, neither, only the first or only the second member is correct. The Yule statistic of the pair is $(N^{11} N^{00} - N^{01} N^{10}) / (N^{11} N^{00} + N^{01} N^{10})$, and $\mathcal{Q}$ is the mean of the statistic over all pairs, so a high $\mathcal{Q}$ means that the members tend to be right and wrong together. Given the doubts of Kuncheva and Whitaker, the measures serve as descriptions only. The decomposition follows the definitions of Breiman~\cite{breiman1998} over $R$ training sets. The bias $\beta$ is the share of test instances whose main prediction is wrong, and the error $\mathcal{E}$ is the mean error over the instances and the training sets. The variance $\mathcal{V}$ is the mean share of predictions that differ from the main prediction, whether the difference helps or hurts. The net variance $\mathcal{N} = \mathcal{E} - \beta$ is a different quantity: the harmful differences minus the helpful ones. A model can therefore have a large $\mathcal{V}$ and a net variance near zero, and the gains below are stated in terms of $\mathcal{N}$. The bias $\beta_{\mathrm{o}}$ replaces each label by the most frequent label of the same feature vector in $D$. The replacement uses the test labels, so $\beta_{\mathrm{o}}$ is descriptive only.
+
+\subsection{Statistical Tests}
+\label{sec:procedure-statistics}
+
+Let $\xi_{i,h}$ denote the score of model $h$ on partition $i$, for $i = 1, \ldots, z$ with $z = 15$. The paired difference of models $h$ and $h'$ is $\psi_i = \xi_{i,h} - \xi_{i,h'}$, with mean $\bar{\psi}$ and sample standard deviation $v$. Rainio \textit{et al.} recommended the Wilcoxon signed-rank test for the matched scores of two models~\cite{rainio2024}. The study reported the two-sided exact test with the paired effect size $\gamma = \bar{\psi} / v$. The overlap of the partitions inflates the effect sizes, so the effect sizes only order the differences. The overlap also makes the p-values optimistic, so the corrected resampled t-test of Nadeau and Bengio inflates the variance of the mean difference~\cite{nadeau2003}. Equation~\eqref{eq:corrected} gives the statistic $\tau$, with $\kappa = 1/4$ the ratio of the test size to the training size and $z - 1$ degrees of freedom.
+\begin{equation}
+\label{eq:corrected}
+\tau = \frac{\bar{\psi}}{\sqrt{\left( 1/z + \kappa \right) v^{2}}}
+\end{equation}
+Each family of tests in one table was adjusted with the step-down procedure of Holm~\cite{holm1979}. Two models counted as different only when the adjusted corrected p-value was below 0.05. A mean difference below 0.005 in the macro-averaged F1 score counted as equivalence, and practical sizes are given as multiples of the margin or as correctly classified flows per thousand. Statistical significance and practical size are separate verdicts, and a significant difference need not exceed a few margins. The score of a forest on a partition is the mean over the runs of the forest. The units of the tuning experiments are not independent, so tuning results carry mean differences and effect sizes but no p-values. Scores on the generalisation sets carry bootstrap intervals over the test instances with 1,000 resamples, and two models are compared with the paired bootstrap of the difference.
+
+\subsection{Changes to the Initial Design}
+\label{sec:procedure-deviations}
+
+The initial design followed the one-factor sweeps with one random search that selected a single forest without and a single forest with a class treatment. That search drew only six configurations without a class treatment, so the joint search with four families replaced that search. The edge optimum of the first boosting grid led to the second grid. Before the final comparison, the numbers of runs rose from three to five per comparison partition, from ten to 30 on $G$ and from one to three in tuning, and the decomposition grew from one to five folds. The initial design called the forest with class weights balanced, and the final report names the forests by the mechanism of the class treatment.
+
+\subsection{Summary}
+\label{sec:procedure-summary}
+
+Nine questions guided the experiments on two protocols. The joint search tuned the forests, and the extended grids tuned boosting. The decomposition and the boosting weight explain the mechanisms, and the dissimilar ensembles and the grouped protocol test the argument for similar members. The next section reports the results.
+
+%%%%
+\section{Research Results}
+\label{sec:results}
+
+The forests raised the score of the tree mainly through a lower net variance, and a mild class treatment protected the rare classes. The headline scores come first, so that every tuning result is read against the final comparison. The tuning experiments, the decomposition and the out-of-bag error follow. The comparisons under both protocols, the dissimilar ensembles and a discussion close the Results.
+
+\subsection{Headline Scores}
+\label{sec:res-headline}
+
+Table~\ref{tab:comparison} gives the scores of all eight models under both protocols, as means and standard deviations over the 15 partitions and as point scores on the generalisation sets. The class-sensitive forests had the highest macro-averaged F1 score on every evaluation set, and the plain forest had the highest accuracy. The balanced tree had the highest balanced accuracy, at the lowest accuracy of all models. All four ensembles scored higher than the tree and the weighted nearest-neighbour model in every column. In practical terms, the plain forest classified \OSCompRfVsTreeAccuracyPerK{} more flows per thousand correctly than the tree on the compatible partitions. The gain of the weighted forest in macro-averaged F1 score is \OSCompRfWVsTreeMacroFMargins{} times the equivalence margin. The tuning scores below are means and standard deviations over five folds and two runs unless stated otherwise.
+
+\input{table_comparison}
+
+\subsection{Encoding, Size and Structure}
+\label{sec:res-size}
+
+The one-hot encoding scored \OEncOneF{} $\pm$ \OEncOneFStd{} against \OEncOrdF{} $\pm$ \OEncOrdFStd{} for the ordinal rank, whose thresholds group unrelated categories, so all later experiments kept the one-hot encoding.
+
+The forests reached a plateau within 50 trees and did not decline up to 2,000 trees, as Figure~\ref{fig:size} shows, in line with the convergence that Breiman proved~\cite{breiman2001}. The returns diminished at \OSizePlainDimAt{} trees for the plain forest, \OSizeWeightedDimAt{} for the weighted forest and \OSizeSampledDimAt{} for the sampled forest, before the expected 100 trees. The 500 trees of the comparison therefore lie on the plateau. Boosting, unlike the forests, peaked and then declined. The tuned ensemble reached \OBoostPeakF{} $\pm$ \OBoostPeakFStd{} after \OBoostPeakAt{} rounds and fell to \OBoostLastF{} after \OBoostLast{} rounds, while the training error stayed near \OBoostLastTrain{} and the disagreement rose from \OBoostPeakDis{} to \OBoostLastDis{}. The decline agrees with the expected effect of label noise, although the curve alone does not show the cause. Contrary to the expectation, the optimum came later than the plateau of the forests.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../figures/ensemble/size.pdf}
+\caption{Effect of the number of members}
+\label{fig:size}
+\end{figure}
+
+Figure~\ref{fig:features} shows the effect of the number $\varphi$ of features tried per split. The score rose from \OFeatOneF{} at one feature to \OFeatEightF{} at the default square root, peaked at \OFeatSixteenF{} with 16 features and fell to \OFeatAllF{} for plain bagging. The strength of a tree rose only from \OFeatOneS{} to \OFeatAllS{}, whereas the disagreement fell from \OFeatOneA{} to \OFeatAllA{} and the Yule statistic $\mathcal{Q}$ rose from \OFeatOneQ{} to \OFeatAllQ{}, so the trees erred more often together. A trade-off between strength and diversity therefore existed, but the strength varied little. The diversity moved monotonically with $\varphi$ while the score peaked in the middle of the range, in line with the doubt that Kuncheva and Whitaker raised~\cite{kuncheva2003}. The default square root was not the optimum.
+
+\begin{figure*}[t]
+\centering
+\begin{subfigure}[t]{0.32\textwidth}
+\centering
+\includegraphics{../figures/ensemble/features_f1.pdf}
+\caption{Score}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.32\textwidth}
+\centering
+\includegraphics{../figures/ensemble/features_strength.pdf}
+\caption{Strength $\mathcal{S}$}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.32\textwidth}
+\centering
+\includegraphics{../figures/ensemble/features_disagreement.pdf}
+\caption{Disagreement $\Theta$}
+\end{subfigure}
+\caption{Effect of the number of features per split $\varphi$ on the forest}
+\label{fig:features}
+\end{figure*}
+
+Deep trees with small leaves gave the highest score, as expected for averaging. The score grew from \ODepthThreeLeafOneF{} at depth three to \ODepthNoneLeafOneF{} without a depth limit, and fell to \ODepthNoneLeafFiftyF{} at a leaf size of 50 while the accuracy changed little. The loss lay in the rare classes: the recall of Worms fell from \OLeafOneRSeven{} at a leaf size of one to \OLeafTwentyFiveRSeven{} at 25. A large leaf stops the trees from splitting off the small pockets of a rare class, even though the strength of a single tree rose with the leaf size.
+
+\subsection{Class Treatment and Tuned Ensembles}
+\label{sec:res-treatment}
+
+A mild balanced bootstrap gave the largest gain at a small cost in accuracy, as Table~\ref{tab:treatment} shows. The balanced bootstrap with the exponent 0.5 raised the macro-averaged F1 score by \OTrEffBootHalf{}, with a paired effect size of \OTrEffSizeBootHalf{}, and the recall of Worms from \OTrPlainRSeven{} to \OTrBootHalfRSeven{}. Class weights with the power 0.5 gained \OTrEffWeightHalf{}. Stronger treatments lowered the score again, because the precision of the rare classes fell faster than the recall rose. Undersampling to the smallest class gave the highest balanced accuracy but the lowest score. Combining class weights with the balanced bootstrap gave \OTrBootHalfWeightHalfF{}, below either treatment alone, so the two treatments overlap. The recall of Worms varied by \OTrPlainRSevenStd{} between units for the plain forest, so only large differences on the class are reliable.
+
+\input{table_treatment}
+
+The joint search confirmed the sweeps. In the second stage, the three families with a class treatment were equivalent: the weighted forest reached \OJWeightedF{} $\pm$ \OJWeightedFStd{}, the sampled forest \OJSampledF{} $\pm$ \OJSampledFStd{} and the forest with both treatments \OJBothF{} $\pm$ \OJBothFStd{}. The data therefore do not separate the class weights from the balanced bootstrap. The plain forest scored lower by \OJPlainGap{}. The weighted forest uses \OJWeightedFeatures{} features per split, depth \OJWeightedDepth{}, a leaf size of \OJWeightedLeaf{} and $\alpha = \OJWeightedAlpha$. The sampled forest uses \OJSampledFeatures{} features, fully grown trees and $\omega = \OJSampledOmega$, and the plain forest \OJPlainFeatures{} features.
+
+Boosting needed deep weak learners. The best grid score rose from \OBoostGridDepthThreeBest{} at depth three to \OBoostGridDepthTwentyFourBest{} at depth 24 and fell to \OBoostGridDepthThirtyTwoBest{} at depth 32. The tuned ensemble uses depth \OBoostTunedDepth{}, the learning rate \OBoostTunedRate{}, the class-weight power \OBoostTunedAlpha{} and \OBoostTunedRounds{} rounds, and scored \OBoostTunedF{} $\pm$ \OBoostTunedFStd{}. Even deep learners stayed below the weighted forest.
+
+\subsection{Bias, Variance and Boosting Weight}
+\label{sec:res-bias}
+
+Table~\ref{tab:decomposition} gives the decomposition over the \OBvFolds{} tuning folds, with \OBvSets{} training sets of \OBvRows{} instances per fold. Differences above 0.01 are stable over the folds.
+
+\input{table_decomposition}
+
+The plain forest lowered the error of the tree by \OBvRfErrorDrop{}: the net variance $\mathcal{N}$ fell by \OBvRfNetDrop{} and the bias by \OBvRfBiasDrop{}. Within the operational definitions of Section~\ref{sec:procedure-measures}, about four fifths of the gain came from the reduction of the net variance, as expected. The variance $\mathcal{V}$ fell further, from \OBvTreeV{} to \OBvRfV{}, because $\mathcal{V}$ also counts the helpful differences. Plain bagging reached nearly the same error, so the random feature subsets added little at the training-set size of the decomposition. The class treatment moved errors from the rare classes to the frequent classes. The weighted forest kept the net variance of the plain forest, while the bias on Worms fell from \OBvRfBSeven{} to \OBvRfWBSeven{} and on denial of service (DoS) from \OBvRfBThree{} to \OBvRfWBThree{}. Per class, the decomposition locates the remaining error. On Backdoor and Analysis, the bias stayed at \OBvRfBTwo{} and \OBvRfBFive{} for the plain forest, against \OBvTreeBTwo{} and \OBvTreeBFive{} for the tree, with net variances of \OBvRfNTwo{} and \OBvRfNFive{}, so averaging had no variance left to remove on those classes. On Worms, the plain forest lowered the net variance from \OBvTreeNSeven{} to \OBvRfNSeven{} at a nearly unchanged bias. Even the weighted forest kept a bias of \OBvRfWBTwo{} on Backdoor and \OBvRfWBFive{} on Analysis. The sampled forest had a higher variance, because a balanced bootstrap repeats the few rare instances many times. Boosting shares the class weights of the weighted forest, so the weighted forest is the reference for boosting. Contrary to both expectations, boosting reduced the bias no further than the weighted forest and kept more variance than the forests, although less than the tree. The decomposition covered only the tuned deep learners.
+
+Boosting placed nearly all of the instance weight on the conflicting vectors within the first rounds. Rows of conflicting vectors make up \OBwConfRows{} of the training rows, yet their share of the weight rose from \OBwConfOne{} after the first round to \OBwConfTen{} after ten rounds and \OBwConfHundred{} after 100 rounds. The conflicting vectors hold every row that no deterministic classifier can fit. The concentration and the decline after the peak agree with the conflicting rows driving the decline, but deep learners and class weights also shape the rounds.
+
+\subsection{Out-of-Bag Error as a Validation Signal}
+\label{sec:res-oob}
+
+The out-of-bag score ranked distant configurations well and close configurations poorly. Figure~\ref{fig:oob} plots the out-of-bag against the test score of \OOobN{} forest configurations. The rank correlation was \OOobSpearmanF{} over all configurations and \OOobSpearmanHalfF{} above a test score of 0.5, but fell to \OOobSpearmanStageTwo{} within the close configurations of the second search stage. The out-of-bag accuracy differed from the test accuracy by \OOobDiffAcc{} on average.
+
+\begin{figure}[t]
+\centering
+\includegraphics{../figures/ensemble/oob.pdf}
+\caption{Out-of-bag against test score of all configurations}
+\label{fig:oob}
+\end{figure}
+
+The out-of-bag macro-averaged F1 score lay below the test score by \OOobDiffFAbs{} on average, most of all for the class-balanced samplers in the cluster below the diagonal. A balanced bootstrap draws each instance of a rare class many times, so the instance is out of bag for few trees. Within the four families, the out-of-bag choice matched the cross-validated choice in \OOobFamSame{} families, with a largest loss of \OOobFamMaxRegret{}.
+
+\subsection{Comparison under the Compatible Protocol}
+\label{sec:res-comparison}
+
+Every ensemble scored higher than the tree under the compatible protocol, as Table~\ref{tab:comparison} shows. The weighted forest scored higher than the tree by \OSCompRfWVsTreeMacroFAbsDiff{} in all 15 partitions, with \OSCompRfWVsTreeMacroFCor{} for the adjusted corrected t-test and \OSCompRfWVsTreeMacroFWil{} for the adjusted Wilcoxon test, and raised the balanced accuracy by \OSCompRfWVsTreeBalAccAbsDiff{}. The plain forest scored higher than the tree by \OSCompRfVsTreeMacroFAbsDiff{} (\OSCompRfVsTreeMacroFCor{}) and higher than the weighted nearest-neighbour model by \OSCompRfVsKnnCwMacroFAbsDiff{}. The sampled forest and boosting also scored higher than the tree, by \OSCompRfSVsTreeMacroFAbsDiff{} (\OSCompRfSVsTreeMacroFCor{}) and \OSCompBoostVsTreeMacroFAbsDiff{} (\OSCompBoostVsTreeMacroFCor{}), so all four gains over the tree were significant after the Holm adjustment. The gains were also practically large, between \OSCompBoostVsTreeMacroFMargins{} and \OSCompRfWVsTreeMacroFMargins{} times the equivalence margin. The two class-sensitive forests did not differ (\OSCompRfWVsRfSMacroFCor{}), whereas boosting scored lower than the weighted forest by \OSCompRfWVsBoostMacroFAbsDiff{} (\OSCompRfWVsBoostMacroFCor{}). Boosting and the plain forest differed by only \OSCompRfVsBoostMacroFAbsDiff{} (\OSCompRfVsBoostMacroFCor{}), a difference that is neither significant nor practically relevant. The gap to the weighted forest lies in the rare classes, as the accuracies differed by only \OSCompRfWVsBoostAccuracyPerK{} flows per thousand. The class treatment cost the plain forest \OSCompRfVsRfWAccuracyPerK{} correctly classified flows per thousand. On $G$, the paired bootstrap interval of the weighted forest against the tree, $[\OGDCompRfWVsTreeMacroFLo, \OGDCompRfWVsTreeMacroFHi]$, excludes zero. The intervals of the sampled against the weighted forest and of boosting against the plain forest include zero.
+
+The gain came from the test instances without a training twin. On average, \OPCompShareNone{} per cent of the test instances had no twin, \OPCompShareCons{} per cent had twins of one label and \OPCompShareConf{} per cent had twins with conflicting labels. Every model classified the consistent twins almost perfectly and the conflicting twins poorly, the tree with accuracies of \OPCompTreeAccCons{} and \OPCompTreeAccConf{}. Without a twin, the accuracy rose from \OPCompTreeAccNone{} for the tree to \OPCompRfAccNone{} for the plain forest, the expected answer to the comparison question.
+
+The class treatment raised the F1 score on $G$ of Worms from \OPcRfFSeven{} for the plain forest to \OPcRfWFSeven{} for the weighted forest, and of DoS from \OPcRfFThree{} to \OPcRfWFThree{}. Worms has only 35 instances in $G$, and every model stayed below 0.2 on Backdoor and Analysis. Figure~\ref{fig:confusion} shows the confusion of the weighted forest. More than half of the Backdoor and Analysis flows were predicted as DoS, and DoS and Exploits exchanged a quarter or more of the flows of each class. In $D$, \OConfTwo{} per cent of the Backdoor flows and \OConfFive{} per cent of the Analysis flows sit in vectors with conflicting labels, against \OConfZero{} per cent of the normal flows.
+
+\begin{figure}[t]
+\centering
+\includegraphics{../figures/ensemble/confusion.pdf}
+\caption{Row-normalised confusion matrix of the weighted forest on $G$ in per cent}
+\label{fig:confusion}
+\end{figure}
+
+A split of $G$ tests the role of the conflicting vectors. On the \OGcCleanRows{} per cent of the rows outside conflicting vectors, the weighted forest predicted \OGcCleanBackDoS{} per cent of the Backdoor flows and \OGcCleanAnalDoS{} per cent of the Analysis flows as DoS, against \OGcConfBackDoS{} and \OGcConfAnalDoS{} per cent inside conflicting vectors. The conflicting labels are therefore the main source of that confusion. The confusion of DoS with Exploits persisted on the clean rows, at \OGcCleanDoSExpl{} per cent, so the two classes overlap in the feature space beyond the identical vectors.
+
+\subsection{Grouped Protocol and Dissimilar Ensembles}
+\label{sec:res-grouped}
+
+The grouped scores stayed close to the compatible scores, although no test vector had a twin. The plain nearest-neighbour model fell from \OPCompKnnMacroF{} to \OPGrpKnnMacroF{}, as expected for a memorising model. The accuracy was slightly higher on the grouped partitions, for a cause that is not established. The Kendall rank correlation of the mean scores of the eight models between the protocols was \OKendallAccuracy{} for the accuracy, \OKendallBalAcc{} for the balanced accuracy and \OKendallMacroF{} for the macro-averaged F1 score. Two pairs changed places: the two single trees, and the plain forest and boosting. Each of those pairs lay within the equivalence margin under one of the protocols. The weighted forest stayed above the weighted nearest-neighbour model by \OSGrpRfWVsKnnCwMacroFAbsDiff{} (\OSGrpRfWVsKnnCwMacroFCor{}), so the ranking of the ensembles above the single models held.
+
+The gains over the tree did not shrink on the grouped partitions. The weighted forest scored higher than the tree by \OSGrpRfWVsTreeMacroFAbsDiff{} (\OSGrpRfWVsTreeMacroFCor{}), against \OSCompRfWVsTreeMacroFAbsDiff{} under the compatible protocol. The sampled forest gained \OSGrpRfSVsTreeMacroFAbsDiff{} against \OSCompRfSVsTreeMacroFAbsDiff{}, and boosting \OSGrpBoostVsTreeMacroFAbsDiff{} against \OSCompBoostVsTreeMacroFAbsDiff{}. Only the gain of the plain forest fell, from \OSCompRfVsTreeMacroFAbsDiff{} to \OSGrpRfVsTreeMacroFAbsDiff{}. All four gains stayed significant, each with \OSGrpRfVsTreeMacroFCor{}. The unchanged gains agree with Section~\ref{sec:res-comparison}, where the gain came from the test instances without a twin, the only kind of test instance in a grouped partition.
+
+The single grouped split $G_{g}$ gave a different picture. On $G_{g}$, every model had a lower accuracy than on $G$, by \OGAccDropMinPerK{} to \OGAccDropMaxPerK{} flows per thousand. The gain over the tree was smaller for every ensemble. The gain of the weighted forest fell from $\OGDCompRfWVsTreeMacroF$ to $\OGDGrpRfWVsTreeMacroF$, that of the plain forest from $\OGDCompRfVsTreeMacroF$ to $\OGDGrpRfVsTreeMacroF$, that of the sampled forest from $\OGDCompRfSVsTreeMacroF$ to $\OGDGrpRfSVsTreeMacroF$ and that of boosting from $\OGDCompBoostVsTreeMacroF$ to $\OGDGrpBoostVsTreeMacroF$. The two generalisation sets hold different rows, and the 15 grouped partitions show no such shrinkage. The smaller gains on $G_{g}$ may therefore be specific to that one split, and the comparison is not an isolated causal estimate of the effect of the twins.
+
+No dissimilar combination scored higher than the best forest. Under the compatible protocol, the vote of all four members scored \OPCompVoteAllMacroF{}, lower than the weighted forest by \OSCompVoteAllVsRfWMacroFAbsDiff{} (\OSCompVoteAllVsRfWMacroFCor{}), and the vote of the two forests scored \OPCompVoteForestsMacroF{}. The stacked ensemble scored \OPCompStackMacroF{}, within \OSCompStackVsRfWMacroFAbsDiff{} of the weighted forest, and lay below the weighted forest by \OSGrpStackVsRfWMacroFAbsDiff{} (\OSGrpStackVsRfWMacroFCor{}) under the grouped protocol. Leaving the tree out of the vote raised the score by \OSCompVoteNoTreeVsVoteAllMacroFAbsDiff{}, and leaving the nearest-neighbour model out lowered the score by \OSCompVoteNoKnnVsVoteAllMacroFAbsDiff{}. The nearest-neighbour model thus adds a little diversity, but the equal weights let the weaker members pull the vote below the strongest member. As expected, no combination improved on the best forest by more than 0.005.
+
+\subsection{Discussion}
+\label{sec:res-discussion}
+
+Three findings cut across the questions. First, averaging saturates early and removes mainly variance. Much of the remaining bias sits in the attack categories whose flows share conflicting vectors, and neither more trees nor boosting reduced that part. Second, the rare classes respond to the class treatment and to deep trees with small leaves, not to the number of trees. A mild treatment raised the score by \OJPlainGap{} in the joint search. Third, the repeated vectors did not change the order of the models, and the evidence on the size of the gain is mixed. The gains held on the 15 grouped partitions, as the twin analysis predicts, but shrank on the single set $G_{g}$. The two generalisation sets differ in their rows, so the smaller gains on $G_{g}$ are consistent with an effect of the twins or with a property of that one split, not an inference of either.
+
+The evidence on boosting has three levels. The observation is that boosting peaked and then declined, and that nearly all of the instance weight moved to the conflicting rows. The interpretation is that boosting fits label noise, in line with the finding of Breiman that forests are more robust to noise. A causal test would refit boosting without the minority labels of the conflicting vectors. The study did not run that test, so label noise remains the most plausible explanation and not a proven cause.
+
+Five limitations qualify the findings. First, the tuned configurations came from the development set that the comparison partitions reuse, although the baselines share the effect. Second, the 15 partitions overlap, so the tests remain optimistic after the correction, and the conclusions also rest on effect sizes and the generalisation sets. Third, Worms has about \nWormsFold{} test instances per fold and 35 in $G$, so the scores of Worms are noisy. Fourth, the study did not build gradient boosting. Fifth, published results on UNSW-NB15 use other partitions, class sets and preprocessing, so the study does not compare the present scores with the published scores.
+
+\subsection{Summary}
+\label{sec:res-summary}
+
+The forests converged after 20 to 50 trees and gained mainly through a lower net variance, and a mild class treatment helped the rare classes. The ranking and the gains over the tree held on the grouped partitions, and only the grouped generalisation set showed smaller gains. Boosting scored lower than the weighted forest and placed nearly all of the instance weight on conflicting rows. No dissimilar ensemble scored higher than the best forest.
+
+%%%%
+\section{Conclusion}
+\label{sec:conclusion}
+
+The study measured how much ensembles of classification trees gain on imbalanced attack categories with conflicting vectors, and why. The Conclusion answers the research questions and states the limitations and future work.
+
+\subsection{Answers to the Research Questions}
+\label{sec:concl-findings}
+
+The study built a random forest and the stagewise additive modelling using a multi-class exponential loss (SAMME) variant of adaptive boosting from scratch. Under the compatible protocol, the macro-averaged F1 score rose from \OPCompTreeMacroF{} for the tree to between \OPCompBoostMacroF{} and \OPCompRfWMacroF{} for the ensembles. All four gains over the tree were significant after the Holm adjustment under both protocols.
+
+The returns of the forests diminished after 20 to 50 trees without overfitting, whereas boosting peaked at \OBoostPeakAt{} rounds and then degraded. As the number of features per split grew, the strength of a tree varied little while the diversity fell, and the optimum of 16 to 24 features lay above the default. Fully grown trees with small leaves were best. A mild class treatment raised the score, and class weights and the balanced bootstrap were equivalent on the partitions and on $G$. About four fifths of the gain of the plain forest came from a reduction of the net variance. The boosting weight moved to the rows of conflicting vectors, a shift that agrees with sensitivity to label noise but does not prove such sensitivity. The out-of-bag error estimated the accuracy closely but separated close configurations poorly. The ensembles scored higher than both models of the second assignment, and the gain came from the test instances without a twin. Under the grouped protocol, the ranking held and the gains over the tree did not shrink on the partitions, apart from a small decrease for the plain forest. The gains were smaller only on the single set $G_{g}$, whose rows differ from those of $G$. No dissimilar ensemble improved on the best forest.
+
+\subsection{Limitations and Future Work}
+\label{sec:concl-future}
+
+The overlap of the partitions, the reuse of the development set and the small Worms class limit the precision of the conclusions. Boosting without the minority labels of the conflicting vectors would test the cause of the decline of boosting, and grouped and ungrouped splits of one pool of rows would isolate the effect of the twins. Gradient boosting and tuning under the grouped protocol are further directions.
+
+\bibliography{refs_common,references}
+\raggedbottom
+
+\appendices
+\section{Acronyms}
+\label{app:acronyms}
+The report uses the two acronyms listed below. UNSW-NB15, the name of the data set, and F1, the name of a score, are names rather than acronyms.
+
+\smallskip
+\noindent
+\begin{tabular}{@{}lp{0.36\textwidth}@{}}
+DoS & denial of service, an attack category \\
+SAMME & stagewise additive modelling using a multi-class exponential loss \\
+\end{tabular}
+
+\section{Symbols}
+\label{app:symbols}
+The symbols follow in alphabetical order, Latin letters first and Greek letters second.
+
+\newcommand{\sym}[2]{\par\noindent\hangindent=0.11\textwidth\hangafter=1\makebox[0.11\textwidth][l]{#1}#2}
+\smallskip
+\sym{$a_{i,j}$}{votes for class $j$ on instance $i$}
+\sym{$B$, $c$}{number of members, member index}
+\sym{$b_j$}{class weight of class $j$}
+\sym{$D$, $G$}{development and generalisation set}
+\sym{$D_{g}$, $G_{g}$}{grouped development and generalisation set}
+\sym{$\mathcal{E}$}{error over training sets}
+\sym{$e_j$}{recall of class $j$}
+\sym{$f_j$, $\bar{f}$}{F1 score of class $j$, macro-averaged F1}
+\sym{$g(t)$, $H(t)$}{Gini index and entropy}
+\sym{$i$, $j$}{instance index, class index}
+\sym{$h$, $h'$}{model indices}
+\sym{$k$}{number of neighbours}
+\sym{$m$}{number of classes}
+\sym{$\mathcal{N}$}{net variance}
+\sym{$N^{11}$, $N^{00}$}{instances where both or neither member is correct}
+\sym{$N^{10}$, $N^{01}$}{instances where only one member is correct}
+\sym{$n$, $n_j$}{training instances, of class $j$}
+\sym{$P_{c,j}(\vect{x})$}{leaf proportion of class $j$}
+\sym{$p_{c,i}$}{boosting weight of instance $i$}
+\sym{$\mathcal{Q}$}{mean Yule statistic of member pairs}
+\sym{$q$}{undersampling size per class}
+\sym{$R$}{number of training sets}
+\sym{$\mathcal{S}$}{strength of the members}
+\sym{$s$}{candidate split}
+\sym{$\mathcal{T}$}{evaluated set of instances}
+\sym{$t$, $t_L$, $t_R$}{node and children}
+\sym{$u_j$}{precision of class $j$}
+\sym{$\mathcal{V}$}{variance}
+\sym{$v$}{deviation of paired differences}
+\sym{$w_i$}{vote weight of neighbour $i$}
+\sym{$\vect{x}$, $\vect{x}_i$}{feature vector, of instance $i$}
+\sym{$y_i$}{label of instance $i$}
+\sym{$\hat{y}(\vect{x})$}{predicted class}
+\sym{$\tilde{y}(\vect{x}_i)$}{out-of-bag prediction}
+\sym{$z$}{number of partitions}
+\sym{$\alpha$}{class-weight power}
+\sym{$\beta$, $\beta_{\mathrm{o}}$}{bias against label, against best label}
+\sym{$\gamma$}{paired effect size}
+\sym{$\Delta(s,t)$}{impurity decrease}
+\sym{$\eta_L$, $\eta_R$}{shares of the node weight}
+\sym{$\Theta$}{disagreement of members}
+\sym{$\iota$}{indicator function}
+\sym{$\kappa$}{ratio of test to training size}
+\sym{$\mu_c(\vect{x})$}{class predicted by member $c$}
+\sym{$\nu_c$}{model weight of member $c$}
+\sym{$\pi_{t,j}$}{class proportion at node $t$}
+\sym{$\varrho$}{learning rate}
+\sym{$\sigma_c$}{weighted error of member $c$}
+\sym{$\tau$}{corrected t statistic}
+\sym{$\phi$}{impurity measure}
+\sym{$\varphi$}{features tried per split}
+\sym{$\chi_{c,i}$}{multiplicity of instance $i$}
+\sym{$\psi_i$, $\bar{\psi}$}{paired difference and mean}
+\sym{$\xi_{i,h}$}{score of model $h$ on partition $i$}
+\sym{$\omega$}{class-balance exponent}
+\sym{$\Omega_k(\vect{x})$}{indices of the neighbours}
+\par
+
+\end{document}

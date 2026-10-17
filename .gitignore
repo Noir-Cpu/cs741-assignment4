@@ -1,0 +1,42 @@
+# Course material, not redistributed (lecture notes, papers, brief, writing rules, submission copy)
+/*.pdf
+
+# Data set supplied by the course: place at data/networkTraffic.csv
+/data/*
+!/data/.gitkeep
+
+# Private planning notes
+/COMPLIANCE.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ipynb_checkpoints/
+
+# LaTeX build products
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Large intermediates (regenerate with the scripts in code/)
+results/checkpoints/
+*.npy
+*.npz
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local orchestration notes
+/PLAN.md
+/logs/
+/PLAN2.md
+/reviews/
+/.venv314/

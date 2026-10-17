@@ -1,0 +1,245 @@
+{
+  "master_seed": 1072417991,
+  "purposes": {
+    "holdout": "grouped-generalisation-split",
+    "tuning": "grouped-tuning-cv",
+    "comparison": "grouped-comparison-cv"
+  },
+  "n_total": 257673,
+  "n_development_grouped": 206147,
+  "n_generalisation_grouped": 51526,
+  "n_development_standard": 206139,
+  "n_generalisation_standard": 51534,
+  "groups_full_table": {
+    "n_rows": 257673,
+    "n_groups": 153684,
+    "n_excess_rows": 103989,
+    "share_rows_in_repeated_groups": 0.46454614957717727,
+    "n_conflicting_groups": 2445,
+    "share_rows_in_conflicting_groups": 0.15678786679240744,
+    "largest_group": 483
+  },
+  "groups_development_standard": {
+    "n_rows": 206139,
+    "n_groups": 125768,
+    "n_excess_rows": 80371,
+    "share_rows_in_repeated_groups": 0.4523355599862229,
+    "n_conflicting_groups": 2275,
+    "share_rows_in_conflicting_groups": 0.15572016940025904,
+    "largest_group": 406
+  },
+  "groups_development_grouped": {
+    "n_rows": 206147,
+    "n_groups": 123191,
+    "n_excess_rows": 82956,
+    "share_rows_in_repeated_groups": 0.4646247580609953,
+    "n_conflicting_groups": 1981,
+    "share_rows_in_conflicting_groups": 0.15678132594701838,
+    "largest_group": 483
+  },
+  "groups_shared_G": {
+    "n_rows": 51534,
+    "n_groups": 36877,
+    "n_excess_rows": 14657,
+    "share_rows_in_repeated_groups": 0.37819691853921683,
+    "n_conflicting_groups": 1538,
+    "share_rows_in_conflicting_groups": 0.1419451236077153,
+    "largest_group": 77
+  },
+  "class_counts": {
+    "total": [
+      93000,
+      13987,
+      2329,
+      16353,
+      44525,
+      2677,
+      24246,
+      174,
+      1511,
+      58871
+    ],
+    "shared_G": [
+      18600,
+      2797,
+      466,
+      3271,
+      8905,
+      535,
+      4849,
+      35,
+      302,
+      11774
+    ],
+    "shared_D": [
+      74400,
+      11190,
+      1863,
+      13082,
+      35620,
+      2142,
+      19397,
+      139,
+      1209,
+      47097
+    ],
+    "G_g": [
+      18595,
+      2797,
+      466,
+      3271,
+      8904,
+      535,
+      4849,
+      35,
+      302,
+      11772
+    ],
+    "D_g": [
+      74405,
+      11190,
+      1863,
+      13082,
+      35621,
+      2142,
+      19397,
+      139,
+      1209,
+      47099
+    ]
+  },
+  "max_abs_class_count_difference_G_g_vs_shared_G": 5,
+  "class7": {
+    "class7_total": 174,
+    "class7_shared_G": 35,
+    "class7_G_g": 35,
+    "class7_D_g": 139,
+    "class7_groups_total": 171,
+    "class7_test_count_per_fold_min": 27,
+    "class7_test_count_per_fold_max": 28
+  },
+  "classes_with_fewer_than_20_test_rows": [],
+  "twin_share_G_standard": 0.45197345441844217,
+  "twin_share_G_grouped": 0.0,
+  "tuning_balance": {
+    "ideal_per_class": [
+      14881.0,
+      2238.0,
+      372.6,
+      2616.4,
+      7124.2,
+      428.4,
+      3879.4,
+      27.8,
+      241.8,
+      9419.8
+    ],
+    "max_relative_deviation_per_class": [
+      0.0002015993548820644,
+      0.0,
+      0.001610305958132106,
+      0.00022932273352694888,
+      0.00016843996518904833,
+      0.001400560224089689,
+      0.00015466309223073388,
+      0.028776978417266213,
+      0.0033085194375517425,
+      0.0006157243253571491
+    ],
+    "min_test_count_per_class": [
+      14878,
+      2238,
+      372,
+      2616,
+      7123,
+      428,
+      3879,
+      27,
+      241,
+      9414
+    ],
+    "max_test_count_per_class": [
+      14883,
+      2238,
+      373,
+      2617,
+      7125,
+      429,
+      3880,
+      28,
+      242,
+      9424
+    ],
+    "fold_size_min": 41218,
+    "fold_size_max": 41239,
+    "fold_size_relative_spread": 0.0005093452730333209
+  },
+  "comparison_balance": {
+    "ideal_per_class": [
+      14881.0,
+      2238.0,
+      372.6,
+      2616.4,
+      7124.2,
+      428.4,
+      3879.4,
+      27.8,
+      241.8,
+      9419.8
+    ],
+    "max_relative_deviation_per_class": [
+      0.00033599892480344065,
+      0.0,
+      0.001610305958132106,
+      0.00022932273352694888,
+      0.00016843996518904833,
+      0.001400560224089689,
+      0.00015466309223073388,
+      0.028776978417266213,
+      0.0033085194375517425,
+      0.0006157243253571491
+    ],
+    "min_test_count_per_class": [
+      14876,
+      2238,
+      372,
+      2616,
+      7123,
+      428,
+      3879,
+      27,
+      241,
+      9414
+    ],
+    "max_test_count_per_class": [
+      14886,
+      2238,
+      373,
+      2617,
+      7125,
+      429,
+      3880,
+      28,
+      242,
+      9424
+    ],
+    "fold_size_min": 41217,
+    "fold_size_max": 41239,
+    "fold_size_relative_spread": 0.0005335998098444314
+  },
+  "grouped_development_index_digest": "c4ed87366498667d",
+  "grouped_generalisation_index_digest": "0e0a3985f24bad48",
+  "mean_twin_share": {
+    "grouped_comparison": 0.0,
+    "grouped_tuning": 0.0,
+    "standard_comparison": 0.4406201800705856,
+    "standard_tuning": 0.4406007775800961
+  },
+  "mean_twin_share_same_label": {
+    "grouped_comparison": 0.0,
+    "grouped_tuning": 0.0,
+    "standard_comparison": 0.4133715751665805,
+    "standard_tuning": 0.41353167271268354
+  },
+  "max_groups_crossing_grouped": 0
+}

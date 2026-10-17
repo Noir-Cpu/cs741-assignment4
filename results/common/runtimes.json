@@ -1,0 +1,18 @@
+{
+  "tune_knn": {
+    "wall_seconds": 143.04196669500016
+  },
+  "peak_rss_mb": 489.4453125,
+  "tune_tree": {
+    "wall_seconds": 146.78852458800247
+  },
+  "compare": {
+    "wall_seconds": 462.4019696510004
+  },
+  "final": {
+    "wall_seconds": 49.617230766998546
+  },
+  "analyse": {
+    "wall_seconds": 0.03358823099915753
+  }
+}

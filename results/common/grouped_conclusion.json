@@ -1,0 +1,122 @@
+{
+  "models": [
+    "knn",
+    "knn_cw",
+    "tree",
+    "tree_balanced"
+  ],
+  "per_measure": {
+    "accuracy": {
+      "ranking_primary": [
+        "tree",
+        "knn_cw",
+        "knn",
+        "tree_balanced"
+      ],
+      "ranking_grouped": [
+        "tree",
+        "knn_cw",
+        "knn",
+        "tree_balanced"
+      ],
+      "ranking_unchanged": true,
+      "kendall_tau": 1.0,
+      "ranking_unchanged_on_G": true,
+      "kendall_tau_G": 1.0
+    },
+    "macro_f1": {
+      "ranking_primary": [
+        "tree",
+        "tree_balanced",
+        "knn_cw",
+        "knn"
+      ],
+      "ranking_grouped": [
+        "tree_balanced",
+        "tree",
+        "knn_cw",
+        "knn"
+      ],
+      "ranking_unchanged": false,
+      "kendall_tau": 0.6666666666666669,
+      "ranking_unchanged_on_G": true,
+      "kendall_tau_G": 1.0
+    },
+    "weighted_f1": {
+      "ranking_primary": [
+        "tree",
+        "knn_cw",
+        "knn",
+        "tree_balanced"
+      ],
+      "ranking_grouped": [
+        "tree",
+        "knn_cw",
+        "knn",
+        "tree_balanced"
+      ],
+      "ranking_unchanged": true,
+      "kendall_tau": 1.0,
+      "ranking_unchanged_on_G": true,
+      "kendall_tau_G": 1.0
+    },
+    "balanced_accuracy": {
+      "ranking_primary": [
+        "tree_balanced",
+        "tree",
+        "knn_cw",
+        "knn"
+      ],
+      "ranking_grouped": [
+        "tree_balanced",
+        "tree",
+        "knn_cw",
+        "knn"
+      ],
+      "ranking_unchanged": true,
+      "kendall_tau": 1.0,
+      "ranking_unchanged_on_G": true,
+      "kendall_tau_G": 1.0
+    }
+  },
+  "assignment2_conclusion_primary": {
+    "tree_macro_f1_higher": true,
+    "tree_balanced_accuracy_higher": true,
+    "knn_accuracy_higher": false
+  },
+  "assignment2_conclusion_grouped": {
+    "tree_macro_f1_higher": true,
+    "tree_balanced_accuracy_higher": true,
+    "knn_accuracy_higher": false
+  },
+  "assignment2_conclusion_primary_G": {
+    "tree_macro_f1_higher": true,
+    "tree_balanced_accuracy_higher": true,
+    "knn_accuracy_higher": false
+  },
+  "assignment2_conclusion_grouped_G": {
+    "tree_macro_f1_higher": true,
+    "tree_balanced_accuracy_higher": true,
+    "knn_accuracy_higher": false
+  },
+  "assignment2_conclusion_unchanged": true,
+  "assignment2_conclusion_unchanged_on_G": true,
+  "tree_vs_knn_wilcoxon_p_grouped": {
+    "accuracy": 6.103515625e-05,
+    "macro_f1": 6.103515625e-05,
+    "weighted_f1": 6.103515625e-05,
+    "balanced_accuracy": 6.103515625e-05
+  },
+  "tree_minus_knn_mean_difference_grouped": {
+    "accuracy": 0.01552140405458869,
+    "macro_f1": 0.07853777997326063,
+    "weighted_f1": 0.015229021634675034,
+    "balanced_accuracy": 0.07793110563934273
+  },
+  "tree_minus_knn_mean_difference_primary": {
+    "accuracy": 0.0121536278815745,
+    "macro_f1": 0.0573425606913605,
+    "weighted_f1": 0.0089136418484268,
+    "balanced_accuracy": 0.0595919011092118
+  }
+}

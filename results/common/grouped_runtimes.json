@@ -1,0 +1,16 @@
+{
+  "threads": 8,
+  "split": {
+    "wall_seconds": 8.35147859000017
+  },
+  "peak_rss_mb": 1367.74609375,
+  "tune": {
+    "wall_seconds": 662.8783747189998
+  },
+  "compare": {
+    "wall_seconds": 3670.1430656660004
+  },
+  "analyse": {
+    "wall_seconds": 0.1726311109996459
+  }
+}

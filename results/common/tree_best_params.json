@@ -1,0 +1,21 @@
+{
+  "criterion": "entropy",
+  "max_depth": 25,
+  "min_samples_leaf": 1,
+  "class_weight": null,
+  "cv_macro_f1_mean": 0.5802672686898283,
+  "cv_macro_f1_std": 0.009888819659778773,
+  "n_configurations": 168,
+  "n_folds": 5,
+  "wall_seconds": 146.77693762900162,
+  "balanced_variant": {
+    "criterion": "entropy",
+    "max_depth": 15,
+    "min_samples_leaf": 5,
+    "class_weight": "balanced",
+    "cv_macro_f1_mean": 0.5753890881714835,
+    "cv_macro_f1_std": 0.008265261316628225
+  },
+  "best_macro_f1_balanced": 0.5753890881714835,
+  "best_macro_f1_unweighted": 0.5802672686898283
+}

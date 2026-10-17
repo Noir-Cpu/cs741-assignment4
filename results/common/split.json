@@ -1,0 +1,38 @@
+{
+  "master_seed": 1072417991,
+  "holdout_fraction": 0.2,
+  "n_total": 257673,
+  "n_development": 206139,
+  "n_generalisation": 51534,
+  "generalisation_index_digest": "8b2fa6a171bfd3e1",
+  "development_index_digest": "47cf28c162fd036f",
+  "class_counts_development": [
+    74400,
+    11190,
+    1863,
+    13082,
+    35620,
+    2142,
+    19397,
+    139,
+    1209,
+    47097
+  ],
+  "class_counts_generalisation": [
+    18600,
+    2797,
+    466,
+    3271,
+    8905,
+    535,
+    4849,
+    35,
+    302,
+    11774
+  ],
+  "tuning_purpose": "tuning-cv",
+  "comparison_purpose": "comparison-cv",
+  "n_folds": 5,
+  "n_repeats": 3,
+  "quick_subsample": 0
+}

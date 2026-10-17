@@ -1,0 +1,68 @@
+{
+  "n_rows_file": 257673,
+  "n_rows_development": 206139,
+  "n_numeric_features": 39,
+  "n_nominal_features": 3,
+  "imbalance_ratio_file": 534.4827586206897,
+  "service_missing_count_development": 113066,
+  "service_missing_share_development": 0.5484939773647879,
+  "service_missing_share_file": 0.5484509436378666,
+  "service_missing_count_file": 141321,
+  "service_missing_share_by_proto_min": 0.2574592640552498,
+  "service_missing_share_by_proto_max": 1.0,
+  "service_missing_share_by_proto_n_categories": 133,
+  "service_missing_share_by_state_min": 0.4619544945915703,
+  "service_missing_share_by_state_max": 1.0,
+  "service_missing_share_by_state_n_categories": 11,
+  "missing_numeric_values": 0,
+  "nominal_cardinality_development": {
+    "proto": 133,
+    "service": 13,
+    "state": 11
+  },
+  "proto_rare_threshold": 150,
+  "proto_n_rare_categories": 118,
+  "proto_rows_in_rare_categories": 12211,
+  "proto_categories_after_grouping": 16,
+  "proto_top3_share": 0.8977340532359234,
+  "is_ftp_login_values": {
+    "0": 203533,
+    "1": 2586,
+    "2": 7,
+    "4": 13
+  },
+  "is_ftp_login_out_of_range_rows": 20,
+  "is_ftp_login_equals_ct_ftp_cmd_share": 0.9999708934262803,
+  "is_ftp_login_equals_ct_ftp_cmd_on_out_of_range": true,
+  "is_sm_ips_ports_values": [
+    0,
+    1
+  ],
+  "negative_value_columns": [],
+  "constant_columns": [],
+  "duplicate_feature_vectors_excess_rows": 80371,
+  "feature_vectors_with_conflicting_labels": 2275,
+  "rows_in_conflicting_feature_vectors": 32100,
+  "resubstitution_accuracy_ceiling": 0.9161100034442778,
+  "tuning_fold0_test_rows_with_training_duplicate_share": 0.440415261842967,
+  "tuning_fold0_test_rows_with_same_label_duplicate_share": 0.41283624808984404,
+  "n_pairs_correlation_at_least_0.9": 18,
+  "n_pairs_correlation_at_least_0.99": 3,
+  "log_transformed_features": 25,
+  "skewness_before_log_min": 1.63902116767262,
+  "skewness_before_log_max": 78.82229215633825,
+  "skewness_after_log_max": 5.38169823122973,
+  "median_abs_largest": [
+    "sload",
+    745371.0
+  ],
+  "median_abs_smallest_positive": [
+    "dur",
+    0.004292
+  ],
+  "outlier_share_iqr_range": [
+    0.0,
+    0.22345116644594182
+  ],
+  "n_features_with_outliers_above_10_percent": 16
+}

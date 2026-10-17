@@ -1,0 +1,20 @@
+{
+  "knn": {
+    "metric": "manhattan",
+    "k": 9,
+    "weights": "distance",
+    "class_weight_power": 0.0,
+    "cv_macro_f1_mean": 0.5152655323070184,
+    "cv_macro_f1_std": 0.012354839116028396
+  },
+  "knn_cw": {
+    "metric": "manhattan",
+    "k": 25,
+    "weights": "distance",
+    "class_weight_power": 0.25,
+    "cv_macro_f1_mean": 0.5342457825577016,
+    "cv_macro_f1_std": 0.00925620024886482
+  },
+  "n_configurations": 160,
+  "wall_seconds": 338.44020256499994
+}
