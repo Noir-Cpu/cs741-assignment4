@@ -17,16 +17,5 @@ data/       place networkTraffic.csv here; the file is not tracked
 
 The course-supplied `networkTraffic.csv` is not redistributed. Copy it to `data/networkTraffic.csv` before running any script. Scripts read paths relative to the repository root.
 
-## Building the report
 
-```bash
-cd report && tectonic main.tex
-```
 
-## Checks before submission
-
-```bash
-python3 scripts/lint_report.py report/main.tex --bib report/references.bib --code code \
-    --student 22677267 --forbid "<surname>" --forbid "<first name>"
-scripts/check_pdf.sh report/main.pdf 22677267 "<surname>|<first name>"
-```
